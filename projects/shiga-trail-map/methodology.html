@@ -1,0 +1,647 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body><title>Methodology · Ski Resort Trail Maps &amp; GPS Data</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script>document.documentElement.lang = 'en';</script>
+<style>
+/* A plain technical write-up. Plex Sans for text, Plex Mono for code and labels, ink on paper. Data colours: red = the camera only,
+   blue = the final mapping, amber = ski areas, dashed red = the painting's frame, magenta = GPS tracks.
+   Rules of the house, so the next edit stays consistent:
+   - Type: only the --f-* roles below. Running text is --body; --ink is for headings, bold and controls.
+   - Space: only the --s* steps. 8 caption/control gap, 16 paragraph and text-to-block, 24 text-to-figure and caption-to-text,
+     40 sub-section and step, 64 section (48 on phones). Margins are set on the element that follows (margin-top), never both sides.
+   - Radii: --r-blk (4) for blocks and frames, --r-ctl (6) for controls and overlays. One 1px --rule border everywhere.
+   - Everything lines up on the one column edge (.pg content box); figures, tables, code and control rows are full column width. */
+:root { --paper: #fbfaf7; --ink: #1c1c1e; --body: #3a3b3f; --mute: #6b6d73; --rule: #dedcd6; --soft: #f1efe9; --card: #fff; --card-a: #ffffffe6;
+  --red: #d9412b; --blue: #1d5fae; --trk: #d6246e; --area: #f2b705; --extent: #e0321f;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* type scale: one custom property per role, used everywhere below */
+  --f-h1: 600 clamp(34px, 5.2vw, 56px)/1.05 var(--sans);
+  --f-h2: 600 26px/1.2 var(--sans);
+  --f-h3: 600 20px/1.3 var(--sans);
+  --f-lead: 400 18px/1.5 var(--sans);
+  --f-body: 400 16px/1.65 var(--sans);
+  --f-small: 400 14px/1.55 var(--sans);
+  --f-cap: 400 13px/1.45 var(--sans);
+  --f-micro: 400 12px/1.4 var(--sans);          /* dense overlay legends on phones only */
+  --f-label: 500 11px/1.4 var(--mono);          /* uppercase labels (always with --track) and axis ticks */
+  --f-code: 400 13px/1.6 var(--mono);
+  --f-num: 500 20px/1.3 var(--mono);            /* step numerals, the clock; same line box as an h3 */
+  --track: .06em;
+  /* space and shape */
+  --s1: 8px; --s2: 16px; --s3: 24px; --s4: 40px; --s5: 64px; --gut: 20px;
+  --r-blk: 4px; --r-ctl: 6px;
+  color-scheme: light; }
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--body); font: var(--f-body); -webkit-font-smoothing: antialiased; }
+h1, h2, h3, p, ul, ol, dl, dd, figure, pre, table { margin: 0; }
+h1, h2, h3, b, strong { color: var(--ink); }
+b, strong { font-weight: 600; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+code { font-family: var(--mono); font-size: .875em; overflow-wrap: anywhere; }
+a { color: var(--blue); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+[hidden] { display: none !important; }
+p, li, dd, figcaption { text-wrap: pretty; }
+h1, h2, h3, p, li, dd { hanging-punctuation: first; }
+.pg { max-width: calc(1200px + 2 * var(--gut)); margin: 0 auto; padding: 48px max(var(--gut), env(safe-area-inset-right)) 72px max(var(--gut), env(safe-area-inset-left)); }
+
+/* vertical rhythm. Space is always the margin-top of the later element. */
+p + p { margin-top: var(--s2); }
+:is(pre, ul, ol, dl, table, .tbl, .flow) { margin-top: var(--s2); }
+figure { margin-top: var(--s3); }
+:is(h2, h3) + :is(p, ul, ol, dl, pre, table, .tbl, .flow, figure) { margin-top: var(--s2); }
+h3 + :is(p, ul, ol, dl, pre, table, .tbl, figure) { margin-top: var(--s1); }
+:is(figure, pre, ul, ol, dl, table, .tbl, .flow) + p { margin-top: var(--s2); }
+figure + :is(p, ul, ol, dl, pre, table, .tbl) { margin-top: var(--s3); }
+.part { margin-top: var(--s5); }
+.resort { margin-top: var(--s4); }
+.pg > header + * { margin-top: 48px; }
+h2 { font: var(--f-h2); letter-spacing: -.01em; }
+h3 { font: var(--f-h3); }
+h1 { font: var(--f-h1); letter-spacing: -.02em; }
+h1 + p { margin-top: var(--s2); }
+.dek { font: var(--f-lead); }
+.back { font: var(--f-small); }
+figcaption, .cap { font: var(--f-cap); color: var(--mute); margin-top: var(--s1); }
+figcaption b, .cap b { color: var(--ink); }
+ul, ol { padding-left: 1.25em; }
+ol { padding-left: 1.5em; font-variant-numeric: tabular-nums; }
+li + li { margin-top: var(--s1); }
+li::marker { color: var(--mute); }
+.srclabel { display: flex; align-items: center; gap: 10px; font: var(--f-small); font-weight: 600; color: var(--ink); margin-bottom: var(--s1); }
+.srclabel svg { width: 27px; height: 18px; flex: none; }
+
+/* top nav, shared by both pages; the current page's underline sits on the rule */
+.topnav { display: flex; gap: 22px; margin: 0 0 var(--s4); border-bottom: 1px solid var(--rule); font: var(--f-label); text-transform: uppercase; letter-spacing: var(--track); }
+.topnav a { color: var(--mute); text-decoration: none; padding: 2px 0 12px; margin-bottom: -1px; border-bottom: 2px solid transparent; }
+.topnav a:hover { color: var(--ink); }
+.topnav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--ink); }
+
+/* figures with controls: one grid so every row (controls, frame, time bar, scale, caption) is 8px apart */
+figure:is(.live, .aerial, .flatfig) { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s1); }
+figure:is(.live, .aerial, .flatfig) > * { margin: 0; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s2); font: var(--f-cap); color: var(--mute); }
+.bar > span { flex: none; width: 3.5rem; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: var(--r-ctl); overflow: hidden; font: var(--f-cap); }
+.seg button { display: inline-flex; align-items: center; gap: 7px; min-height: 30px; padding: 0 12px; background: var(--card); color: var(--body); white-space: nowrap; }
+.seg button.on, .seg button[aria-pressed="true"] { background: var(--ink); color: var(--card); }
+.seg button:not(.on):not([aria-pressed="true"]):hover { background: var(--soft); }
+.frame { position: relative; border: 1px solid var(--rule); border-radius: var(--r-blk); overflow: hidden; }
+.stage { aspect-ratio: 6000 / 1922; max-width: 100%; background: var(--soft); }
+.zoom { position: absolute; right: 10px; bottom: 10px; display: grid; background: var(--card); border: 1px solid var(--rule); border-radius: var(--r-ctl); overflow: hidden; }
+.zoom button { width: 32px; height: 32px; display: grid; place-items: center; border-top: 1px solid var(--rule); color: var(--body); }
+.zoom button:first-child { border-top: 0; } .zoom button:hover { background: var(--soft); }
+.zoom svg { width: 14px; height: 14px; }
+:where(.seg, .zoom) button:focus-visible { outline-offset: -2px; box-shadow: inset 0 0 0 4px var(--card); position: relative; z-index: 1; }
+.legend, .flat-legend { position: absolute; left: 10px; top: 10px; z-index: 1; max-width: calc(100% - 20px); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: 4px 10px; background: var(--card-a); border: 1px solid var(--rule); border-radius: var(--r-ctl); font: var(--f-cap); color: var(--body); }
+.legend span, .flat-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 16px; height: 3px; border-radius: 2px; background: var(--c); }
+
+/* figure 3: layers on the painting, with a time scrubber */
+.time { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s2); }
+.play { width: 32px; height: 32px; border-radius: 50%; background: var(--ink); color: var(--card); display: grid; place-items: center; }
+.play:hover { background: #000; }
+.play svg { width: 12px; height: 12px; }
+.track { position: relative; height: 34px; cursor: pointer; touch-action: none; margin: 0 6px; border-radius: var(--r-blk); }
+.track .rail { position: absolute; left: 0; right: 0; top: 12px; height: 2px; background: var(--rule); }
+.track .fill { position: absolute; left: 0; top: 12px; height: 2px; background: var(--ink); }
+.track .knob { position: absolute; top: 7px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 3px var(--paper); }
+.track .tk { position: absolute; top: 20px; font: var(--f-label); font-variant-numeric: tabular-nums; color: var(--mute); transform: translateX(-50%); pointer-events: none; }
+.clock { font: var(--f-num); font-variant-numeric: tabular-nums; min-width: 4.5ch; text-align: right; }
+
+/* write-up */
+.step { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 0 var(--s3); margin-top: var(--s4); padding-top: var(--s3); border-top: 1px solid var(--rule); }
+h2 + .step { margin-top: var(--s2); }
+.step .n { font: var(--f-num); font-variant-numeric: tabular-nums; color: var(--mute); }
+.step .body { min-width: 0; }
+.spec, .facts { display: grid; grid-template-columns: 5.75rem minmax(0, 1fr); gap: 10px var(--s2); align-items: baseline; font: var(--f-small); font-variant-numeric: tabular-nums; }
+.facts { padding: 12px var(--s2); background: var(--soft); border-radius: var(--r-blk); }
+.spec dt, .facts dt, .cost dt, th { font: var(--f-label); text-transform: uppercase; letter-spacing: var(--track); color: var(--mute); }
+.spec dt, .facts dt, th { white-space: nowrap; }
+.spec dd p + p { margin-top: var(--s1); }
+summary { cursor: pointer; }
+summary::marker { color: var(--mute); }
+summary:hover { color: var(--ink); }
+details[open] > summary { margin-bottom: var(--s1); }
+.cost { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s2) var(--s3); margin-top: var(--s3); font-variant-numeric: tabular-nums; }
+.cost > div { border-top: 1px solid var(--rule); padding-top: 10px; }
+.cost dt { margin-bottom: 4px; }
+.cost dd { font: var(--f-body); line-height: 1.45; }
+.cost + .cap { margin-top: var(--s2); }
+pre { padding: 12px var(--s2); background: var(--card); border: 1px solid var(--rule); border-radius: var(--r-blk); overflow-x: auto; font: var(--f-code); color: var(--ink); tab-size: 4; }
+pre .c { color: var(--mute); }
+figure img { display: block; width: 100%; height: auto; border: 1px solid var(--rule); border-radius: var(--r-blk); background: var(--card); }
+.key { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: 3px; margin: 0 4px 0 2px; }
+.ring { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin: 0 3px 0 2px; box-sizing: border-box; }
+table { border-collapse: collapse; width: 100%; font: var(--f-small); font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 10px var(--s2) 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { padding-top: 0; padding-bottom: var(--s1); }
+th:last-child, td:last-child { padding-right: 0; }
+td.num, th.num { font-family: var(--mono); white-space: nowrap; text-align: right; }
+footer { margin-top: var(--s5); padding-top: var(--s2); border-top: 1px solid var(--rule); font: var(--f-cap); color: var(--mute); }
+footer p + p { margin-top: var(--s1); }
+
+@media (max-width: 800px) { .cost { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* phones: 16px gutters, figure frames become 4:3 crops you pan around (the 3:1 painting is a sliver at 360 px), controls fill the row, tables reflow */
+@media (max-width: 640px) {
+  :root { --s5: 48px; --gut: 16px; }
+  .pg { padding-top: 28px; padding-bottom: 48px; }
+  .topnav { margin-bottom: var(--s3); }
+  .pg > header + * { margin-top: var(--s4); }
+  .frame.zf, .live .stage { aspect-ratio: 4 / 3 !important; }
+  .legend { display: none !important; }
+  .bar { flex-wrap: nowrap; align-items: flex-start; gap: var(--s1); }
+  .bar > span { width: 3rem; padding-top: 7px; }
+  .seg { flex: 1 1 0; min-width: 0; }
+  .seg button { flex: 1 1 auto; justify-content: center; min-height: 36px; padding: 0 10px; }
+  .zoom { grid-auto-flow: column; right: 6px; bottom: 6px; }
+  .zoom button { width: 36px; height: 36px; border-top: 0; border-left: 1px solid var(--rule); }
+  .zoom button:first-child { border-left: 0; }
+  .track .tk:nth-of-type(even) { display: none; }
+  .time { gap: 10px; }
+  .flat-legend { font: var(--f-micro); gap: 2px 10px; padding: 4px 8px; }
+  .step { grid-template-columns: minmax(0, 1fr); }
+  .step .n { margin-bottom: 4px; }
+  .spec, .facts { grid-template-columns: minmax(0, 1fr); gap: 2px 0; }
+  .spec dd, .facts dd { margin-bottom: 10px; }
+  .spec dd:last-child, .facts dd:last-child { margin-bottom: 0; }
+  .tbl thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .tbl :is(table, tbody, tr, td) { display: block; }
+  .tbl tr { padding: 12px 0; border-bottom: 1px solid var(--rule); }
+  .tbl td { padding: 0; border: 0; }
+  .tbl td:first-child { color: var(--ink); font-weight: 500; }
+  .tbl td:last-child { color: var(--mute); margin-top: 2px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+
+/* zoomable figures (panorama, aerial photo, flat map) */
+/* zoomable image figure: .frame.zf (aspect-ratio set inline); reuses .frame and .zoom from the page */
+.zf { touch-action: none; cursor: grab; background: var(--soft); user-select: none; -webkit-user-select: none; }
+.zf.grabbing { cursor: grabbing; }
+.zf > img.zfimg { position: absolute; left: 0; top: 0; max-width: none; transform-origin: 0 0; will-change: transform; pointer-events: none; -webkit-user-drag: none; border: 0; border-radius: 0; background: none; display: block; }
+/* Fig. 2 aerial photo: zoomable figure (ZoomFig, like Fig. 1) + canvas overlays. Reuses page .bar .seg .frame .zoom; rows are spaced by the figure grid. */
+.aseg .sw { display: inline-block; width: 14px; height: 10px; border-radius: 2px; flex: none; box-sizing: border-box; }
+.aseg .sw-area { background: rgba(242,183,5,.16); border: 2px solid var(--area); box-shadow: 0 0 0 1px var(--ink); }
+.aseg .sw-track { height: 0; border-top: 2.5px solid var(--trk); border-radius: 0; }
+.aseg button[aria-pressed="true"] .sw-area { box-shadow: 0 0 0 1px var(--card); }
+.aerial-frame > canvas.aerial-cv { z-index: 1; position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; max-width: none; border: 0; border-radius: 0; background: none; pointer-events: none; -webkit-user-drag: none; }
+.aerial-frame > .zoom { z-index: 2; }
+/* north arrow + scale bar under a map frame (Fig. 2 and Fig. M6) */
+.aerial-legend { display: flex; align-items: center; gap: var(--s3); font: var(--f-code); line-height: 1.45; color: var(--body); }
+.aerial-north { display: inline-flex; align-items: center; gap: 6px; }
+.aerial-scale { display: inline-flex; align-items: center; gap: var(--s1); }
+.aerial-scale i { display: block; height: 6px; border: 1.5px solid currentColor; border-top: 0; box-sizing: border-box; width: 60px; }
+.aerial-scale em { font-style: normal; font-variant-numeric: tabular-nums; }
+/* Fig. M6 flat-map figure: zoomable (ZoomFig) with a Coverage / Scale / Stretch switch. Reuses page .bar .seg .frame .zoom .legend and .aerial-legend from aerial.css. */
+.flat-frame > .zoom { z-index: 2; }
+.flat-legend { pointer-events: none; }
+.flat-legend b { flex-basis: 100%; font-weight: 500; color: var(--ink); }
+.flat-legend span { white-space: nowrap; }
+.flat-legend i { flex: none; width: 14px; height: 10px; border-radius: 2px; background: var(--c); border: 1px solid #0002; box-sizing: border-box; }
+.flat-legend svg { flex: none; }
+.flat-legend .wrap { white-space: normal; }
+/* in-page editing (writers only; see parts/edit.js) */
+.editbar { position: fixed; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 50; display: flex; align-items: center; gap: 6px; background: var(--card); border: 1px solid var(--rule); border-radius: var(--r-ctl); padding: 5px; box-shadow: 0 2px 10px #0000001a; font: var(--f-cap); }
+.editbar button { padding: 6px 12px; border-radius: var(--r-blk); color: var(--body); }
+.editbar button:hover { background: var(--soft); }
+.editbar [data-a="save"] { background: var(--ink); color: var(--card); }
+.editbar [data-a="save"]:hover { background: var(--ink); opacity: .9; }
+.editbar .editmsg { color: var(--mute); padding: 0 6px; }
+.editbar .editmsg:empty { display: none; }
+.editing [contenteditable] { outline: 1px dashed var(--rule); outline-offset: 3px; border-radius: 2px; cursor: text; }
+.editing [contenteditable]:hover { outline-color: var(--mute); }
+.editing [contenteditable]:focus { outline: 2px solid var(--blue); background: #1d5fae0a; }
+
+/* pipeline: an HTML flow that reflows instead of scrolling - one row on wide screens, then 3 / 2 / 1 columns, growing taller */
+.flow { display: grid; grid-template-columns: minmax(0, .9fr) repeat(6, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+.flow > div { position: relative; min-width: 0; padding: 10px 12px 12px; border: 1px solid var(--ink); border-radius: 4px; background: var(--card); display: flex; flex-direction: column; }
+.flow .fl-in { border-color: var(--rule); }
+.flow h3 { font: 600 14px/1.3 var(--sans); color: var(--ink); margin: 0 0 6px; }
+.flow ul { list-style: none; margin: 0; padding: 0; font: 400 12px/1.5 var(--mono); color: var(--body); }
+.flow li, .flow li + li { margin: 0; } .flow li { padding: 1px 0; }
+.flow .fl-in ul { font: 400 13px/1.5 var(--sans); } .flow .fl-in li + li { margin-top: 4px; }
+.flow .fl-lbl { font: var(--f-label); letter-spacing: var(--track); text-transform: uppercase; color: var(--mute); margin: 0 0 6px; }
+.flow .fl-lib { font: 400 12px/1.4 var(--mono); color: var(--blue); margin: auto 0 0; padding-top: 10px; }
+.flow > div:not(:last-child)::after { content: "→"; position: absolute; right: -9px; top: 50%; transform: translate(50%, -50%); font: 600 15px/1 var(--sans); color: var(--mute); z-index: 1; }
+@media (max-width: 1100px) { .flow { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1100px) { .flow > div::after { content: none !important; } }
+@media (max-width: 460px) { .flow { grid-template-columns: minmax(0, 1fr); } .flow > div:not(:last-child)::after { content: "↓" !important; right: 50%; top: auto; bottom: -9px; transform: translate(50%, 50%); } }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>
+
+<main class="pg" data-edits="edits-methodology.json">
+  <nav class="topnav" aria-label="Pages"><a href="../../index.html">&larr; projects</a><a href="index.html">Overview</a><a href="methodology.html" aria-current="page">Methodology</a></nav>
+  <header>
+    <h1>Methodology</h1>
+    <p class="dek">How the painted Shiga Kogen trail map is georeferenced: data sources, the six-step workflow, and a specification detailed enough to rebuild it.</p>
+    <p class="back"><a href="index.html">&larr; Back to the overview</a></p>
+  </header>
+
+  <section class="part" aria-label="Data sources">
+    <h2>Data sources</h2>
+    <div class="tbl"><table class="sources">
+      <thead><tr><th>Source</th><th>What it provides</th><th>Size used here</th></tr></thead>
+      <tbody>
+        <tr><td>Shiga Kogen Lift Association trail map</td><td>The painted panorama: runs, lifts, station markers, area labels</td><td>3,000 × 961&nbsp;px, upscaled to 6,000 × 1,922</td></tr>
+        <tr><td>GSI (Geospatial Information Authority of Japan) DEM1A</td><td>1&nbsp;m elevation model from airborne LiDAR: the 3D terrain everything is projected from</td><td>2,048 tiles, 148&nbsp;MB</td></tr>
+        <tr><td>GSI DEM5A</td><td>5&nbsp;m elevation, to fill gaps in the 1&nbsp;m data</td><td>153 tiles</td></tr>
+        <tr><td>GSI seamless orthophoto</td><td>Aerial photograph (Fig.&nbsp;2 on the overview page), about 0.3&nbsp;m per pixel</td><td>8,001 tiles, 182&nbsp;MB</td></tr>
+        <tr><td>GSI survey benchmarks</td><td>Surveyed summit heights for the 9 peaks used as control points</td><td>14 peaks</td></tr>
+        <tr><td>OpenStreetMap</td><td>Lifts, ski runs (with difficulty), ski-area outlines and named peaks</td><td>52 lifts, 237 runs, 18 areas</td></tr>
+        <tr><td>Hand-made tables</td><td>Lift-end ↔ painted-marker pairing, painted label positions, lift-number ↔ OSM lift, 5 station corrections</td><td>79 lift ends, 47 lift numbers</td></tr>
+        <tr><td>Phone GPS</td><td>My own tracks: position and time at 1&nbsp;Hz, resampled to 5&nbsp;s</td><td>6 days, 45 hours, 180&nbsp;km, 33,365&nbsp;m descended</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="part" aria-label="Workflow">
+    <h2>Workflow</h2>
+    <article class="step"><div class="n">1</div><div class="body">
+      <div>
+        <h3>Control points</h3>
+        <p>The painting marks every lift&rsquo;s bottom and top station with a black dot or triangle. Those, plus labelled summits, are the features that can be located exactly in both the image and map data.</p>
+        <dl class="facts">
+          <dt>Detect</dt><dd>Dark ink with the label text removed, opened and filtered by size: 86 candidate markers.</dd>
+          <dt>Match</dt><dd>Paired by hand to OpenStreetMap lift ends using the painted lift numbers: 79 lift ends (69 from detected markers, 10 read off the image by hand) plus 9 peaks from the painted ▲, 88 pairs of ground point <code>(x, y, z)</code> ↔ pixel <code>(u, v)</code>. Ground heights come from the GSI (Geospatial Information Authority of Japan) 1&nbsp;m DEM.</dd>
+        </dl>
+      </div>
+      <figure><img src="img/markers.jpg" alt="Painting crop beside its dark-ink mask with detected lift terminals circled"><figcaption><b>Fig.&nbsp;M1</b> Around Mt Higashidateyama. Left: the painting. Right: the dark-ink mask. Circles are detected terminals; <span class="ring" style="border:2px solid var(--blue)"></span>blue ones are used as control points.</figcaption></figure>
+    </div></article>
+
+    <article class="step"><div class="n">2</div><div class="body">
+      <div>
+        <h3>Camera fit</h3>
+        <p>Treat the painting as a photo: find the single pinhole camera that best projects the 88 ground points onto their painted pixels. One extra parameter scales every height before projection, because painters stretch relief to make slopes readable. Because the model is a 3D projection, it accounts for terrain height, and the same camera gives the visibility test used for the coverage maps.</p>
+<pre><span class="c"># 10 parameters; scene axes x east, y up, z south (metres)</span>
+def project(p, P):
+    cx, cy, cz, yaw, pitch, roll, f, u0, v0, ex = p
+    d = (P * [1, ex, 1] - [cx, cy, cz]) @ rot(yaw, pitch, roll).T
+    return u0 + f * d[:, 0] / d[:, 2], v0 - f * d[:, 1] / d[:, 2]</pre>
+        <dl class="facts">
+          <dt>Solve</dt><dd>Robust bounded least squares, started from a coarse multi-start fit on peaks and lift-number labels.</dd>
+          <dt>Result</dt><dd>Viewpoint 9.7&nbsp;km west of the resort centre, heading 1.8° north of east, pitched 10.2° down, roll −4.6°, focal length 2,169&nbsp;px, vertical exaggeration <b>2.50×</b>.</dd>
+          <dt>Error</dt><dd>Median 66&nbsp;px, 90th percentile 216&nbsp;px (on the 3,000&nbsp;px wide image). Too large to place tracks with.</dd>
+        </dl>
+      </div>
+      <figure><img src="img/camera.jpg" alt="Whole panorama with OSM runs projected by the camera only and control-point residuals"><figcaption><b>Fig.&nbsp;M2</b> OSM runs through the camera only <span class="key" style="background:var(--red)"></span>. Each black line joins a control point&rsquo;s predicted position <span class="ring" style="border:2px solid var(--red)"></span> to where it is painted <span class="ring" style="background:var(--ink)"></span>. The misses are largest in the far west (Okushiga, Yakebitai), which the artist pulled closer.</figcaption></figure>
+    </div></article>
+
+    <article class="step"><div class="n">3</div><div class="body">
+      <div>
+        <h3>Thin-plate spline on the residuals</h3>
+        <p>The camera&rsquo;s leftover errors (painted pixel minus predicted pixel) are smooth across the landscape: whole areas were shifted or compressed by the artist. A thin-plate spline interpolates that 2D offset over <em>ground</em> position, and is added to the camera projection.</p>
+<pre>uv(P) = camera(P) + TPS(P.x, P.z)
+<span class="c"># scipy.interpolate.RBFInterpolator(kernel="thin_plate_spline"), positions in km,</span>
+<span class="c"># smoothing = 0.03 / (w_i · mean(w))</span></pre>
+        <p>Interpolating over the ground rather than the image leaves the camera in charge of height; the spline only shifts points within the image plane. Light smoothing tolerates small disagreements between a painted marker and its OSM position.</p>
+        <dl class="facts">
+          <dt>Error</dt><dd>Leave-one-out (predict each control point from the other 87; camera not refit): median 25&nbsp;px, 90th percentile 89&nbsp;px. This is the expected error away from the control points.</dd>
+        </dl>
+      </div>
+      <figure><img src="img/tps.jpg" alt="Whole panorama with OSM runs projected by camera plus spline, now following the painted runs"><figcaption><b>Fig.&nbsp;M3</b> The same OSM runs through camera + spline <span class="key" style="background:var(--blue)"></span>, with lifts in black. Lift ends land on their markers, and runs follow the painted lines. Switch the interactive map on the <a href="index.html">overview page</a> to &ldquo;Final mapping&rdquo; to see the ground grid morph from the camera-only fit to the full mapping.</figcaption></figure>
+    </div></article>
+
+    <article class="step"><div class="n">4</div><div class="body">
+      <div>
+        <h3>Chamfer refinement against the painted runs</h3>
+        <p>The painted runs provide many more constraints than the 88 points. A second, low-frequency correction moves the projected OSM runs onto the painted line of the same colour.</p>
+        <dl class="facts">
+          <dt>Target</dt><dd>Masks of the green, red and black runs and the lift cables (from the ink unmixing in the specification), each turned into a distance field.</dd>
+          <dt>Field</dt><dd>Gaussian RBF nodes every 550&nbsp;m over the ski terrain (114 nodes × 2 offsets). OSM runs and unpinned lifts densified to 12&nbsp;m, then filtered: 7,161 run samples and 170 lift samples kept.</dd>
+          <dt>Solve</dt><dd>Minimise each sample&rsquo;s distance to its class&rsquo;s painted line, capped at 14&nbsp;px so runs the artist never drew are ignored. Penalties keep the control points in place and the offsets small.</dd>
+          <dt>Result</dt><dd>Median distance to the painted line 8.5 → 3.5&nbsp;px; samples within 3&nbsp;px 22% → 46%. Control points end up a median 12&nbsp;px (90th percentile 26&nbsp;px) from their painted positions, up from 6&nbsp;px after the spline alone.</dd>
+        </dl>
+      </div>
+      <figure><img src="img/chamfer.jpg" alt="Distance field around painted runs with OSM runs before and after refinement"><figcaption><b>Fig.&nbsp;M4</b> Distance to the nearest painted run (darker grey is closer; rings every 4&nbsp;px), Ichinose to Takamagahara. OSM runs before <span class="key" style="background:var(--red)"></span> and after <span class="key" style="background:var(--blue)"></span> refinement.</figcaption></figure>
+    </div></article>
+
+    <article class="step"><div class="n">5</div><div class="body">
+      <div>
+        <h3>Bake a lookup grid</h3>
+        <p>The fitted model needs the DEM, the camera, 88 spline centres and 114 refinement nodes, which is too heavy to hand to a web page. For use elsewhere the model is evaluated once on a regular latitude/longitude grid, and a client interpolates between nodes. The overview page&rsquo;s interactive map doesn&rsquo;t use it, since its tracks are projected offline with the full model, but the grid is the portable form of the result.</p>
+        <dl class="facts">
+          <dt>Grid</dt><dd>40&nbsp;m spacing, 182 columns × 360 rows, covering every run and lift on the painting plus 800&nbsp;m. Each node stores its pixel <code>(u, v)</code> × 10 as integers: 709&nbsp;KB of JSON.</dd>
+          <dt>Accuracy</dt><dd>Bilinear lookup vs the full model: median 0.42&nbsp;px, 99th percentile 3.0&nbsp;px. Ground height is baked in, so the noisy GPS altitude is never needed.</dd>
+        </dl>
+<pre>const nx = 182, ny = 360;                 <span class="c">// columns, rows; row 0 is the northernmost, latitudes descending</span>
+function toPixel(lat, lon) {              <span class="c">// bilinear between the 4 surrounding nodes</span>
+  const fx = (lon - G.west) / G.dlon, fy = (G.north - lat) / G.dlat;
+  const i = Math.floor(fx), j = Math.floor(fy), a = fx - i, b = fy - j;
+  const k = j * nx + i;                   <span class="c">// U and V are flat row-major arrays</span>
+  const at = A => A[k]*(1-a)*(1-b) + A[k+1]*a*(1-b) + A[k+nx]*(1-a)*b + A[k+nx+1]*a*b;
+  return [at(U) / 10, at(V) / 10];
+}</pre>
+      </div>
+      <figure><img src="img/grid.jpg" alt="Every 40 m grid node projected onto a crop of the painting near lift 16"><figcaption><b>Fig.&nbsp;M5</b> The grid at full density by the Higashidateyama gondola (lift 16). Squares on the ground become stretched quadrilaterals. Lines bunch up where the slope faces away from the viewer and occupies little of the painting.</figcaption></figure>
+    </div></article>
+
+    <article class="step"><div class="n">6</div><div class="body">
+      <div>
+        <h3>Tracks and rendering</h3>
+        <ul class="plain">
+          <li>Phone GPS at 1&nbsp;Hz is smoothed and labelled run / lift / stop (rules in the specification). Each fix is projected through the full model with its height from the DEM, then resampled to 5&nbsp;s.</li>
+          <li>Lift rides are not projected directly. The painted lift lines are straight but displaced for clarity, so a fix 40% of the way along the real lift is drawn 40% of the way along the painted one.</li>
+          <li>Packed as <code>Int16 u, Int16 v, Uint8 state, Uint8 km/h</code>: 6 bytes per sample.</li>
+          <li>The browser only draws, with Canvas 2D. Tracks get a white casing so they read against the painted runs.</li>
+        </ul>
+      </div>
+    </div></article>
+  </section>
+
+<section class="part" aria-label="Specification">
+    <h2>Specification</h2>
+    <p>Enough detail to rebuild the pipeline. Library calls are Python (NumPy, SciPy, OpenCV) unless noted. Long entries fold open.</p>
+    <dl class="spec">
+      <dt>Frames</dt><dd>Ground: local metric frame in metres, <code>x</code> east, <code>z</code> south, <code>y</code> height above 886&nbsp;m. Image: <code>u</code> right, <code>v</code> down, in pixels of the 3,000 × 961 source; the page doubles them for its 6,000&nbsp;px copy.</dd>
+      <dt>Scene origin</dt><dd>Bounding box S 36.656, N 36.794, W 138.468, E 138.554. Web Mercator at zoom 17: <code>px = (lon + 180)/360 · 256 · 2<sup>17</sup></code>, <code>py = (1 − asinh(tan lat)/π)/2 · 256 · 2<sup>17</sup></code>. The grid origin is the box&rsquo;s north-west corner, <code>(X0, Y0) = (29,683,369, 13,084,403)</code>, and the grid is <code>W × H = 8,016 × 16,048</code> px. Then <code>x = (px − X0 − W/2)·m</code>, <code>z = (py − Y0 − H/2)·m</code>, with one constant <code>m = 0.95727</code> m/px (the mid-latitude value).</dd>
+      <dt>DEM</dt><dd><details><summary>GSI 1&nbsp;m tiles: URL, decoding, voids, subsampling</summary>
+        <p>Tiles: <code>https://cyberjapandata.gsi.go.jp/xyz/dem1a_png/17/{x}/{y}.png</code>, mosaicked onto the grid above. Decode <code>n = R·65536 + G·256 + B</code>; height is <code>0.01·n</code> m if <code>n &lt; 2<sup>23</sup></code>, nodata if <code>n = 2<sup>23</sup></code>, otherwise <code>0.01·(n − 2<sup>24</sup>)</code> m. Voids are filled bilinearly from the 5&nbsp;m tiles (<code>dem5a_png/15</code>), then from the nearest valid cell. Scene height is <code>y = h − 886</code>.</p>
+        <p>The fits, the visibility test, the grid and the track projection all read the grid subsampled every 8&nbsp;px (<code>h[::8, ::8]</code>, 1,002 × 2,006), bilinear, with cell <code>k</code> centred at <code>(k + ½)·8</code> px.</p></details></dd>
+      <dt>OSM</dt><dd><details><summary>Overpass queries, lift and piste classes, peaks</summary>
+        <p>Overpass, bbox <code>36.656,138.468,36.794,138.554</code> (S, W, N, E). Runs and lifts: <code>[out:json][timeout:180];(way["aerialway"](bbox);way["piste:type"](bbox););out geom tags;</code> (the piste and lift part of <code>fetch_osm.sh</code>, which also fetches buildings and roads). Lift geometry with pylon and station nodes: <code>(way["aerialway"](bbox);way["disused:aerialway"](bbox);node["aerialway"](bbox);)->.a;(.a;.a&gt;;);out body;</code>.</p>
+        <p>Lifts: <code>aerialway</code> = <code>chair_lift</code> or <code>gondola</code>, 52 lines (46 chairlifts, 6 gondolas), each oriented bottom → top by DEM height. Pistes: <code>piste:type</code> = <code>downhill</code> or <code>connection</code>; difficulty easy or novice → green, intermediate → red, advanced, expert, freeride, extreme and unrated → black (a connection without a grade counts as green). Lifts form the cable class. Peaks: named <code>natural=peak</code> nodes, position from OSM, elevation from the nearest GSI survey benchmark within 200&nbsp;m, else the <code>ele</code> tag; the fit uses <code>y = ele − 886</code>.</p></details></dd>
+      <dt>Hand data</dt><dd><details><summary>Control-point pairing, painted labels, peak names, lift overrides</summary>
+        <p>These are hand-made, not derivable from public data. <code>ctrl.json</code>: lift number → <code>[bottom, top]</code>, each end a marker index into <code>markers.json</code> or a literal <code>[u, v]</code> in source pixels; 40 lifts, 79 ends, 10 of them literal. <code>labels.json</code>: painted label positions (peak name lines and summit triangles, lift numbers). The lift number ↔ OSM way table lives in each lift&rsquo;s English name (<code>lift #16</code>). Five OSM lift ways carry hand-corrected station positions (<code>overrides.json</code>, keyed by way id: corrected bottom and top lon/lat, the way&rsquo;s other points keep their fractions along the line).</p>
+        <p>Peak names, painted label → OSM name: Yakebitaiyama → Mt Yakebitai, Terakoyayama → Terakoya Peak, Higashidateyama → Mt Higashidate, Akaishiyama → Mt Akaishi, Shigayama → Mt Shiga, Yokoteyama → Mt Yokote, Nishidateyama → Mt Nishidate, Boderayama → Mt Bodera, Kasadake → Mt Kasagatake.</p>
+        <p>An automatic pairing should be possible but I haven&rsquo;t tried it: run the coarse camera fit, project each OSM lift end, take the nearest unused marker within about 80&nbsp;px, and call the end with the lower DEM height the bottom.</p></details></dd>
+      <dt>Ink unmixing</dt><dd><details><summary>Palette, terrain estimate, per-colour coverage (masks for step&nbsp;4)</summary>
+        <p>Palette (RGB): green (18, 140, 62), red (212, 22, 34), black (12, 10, 10), yellow (214, 216, 70), road (205, 88, 96), gondola (232, 150, 100), dot (242, 104, 30), gondola core (246, 214, 182). Candidates: pixels with saturation &gt; 45 (not blue) or value &lt; 55, plus thin dark components (black-hat with a 7&nbsp;px ellipse &gt; 30, components of at least 25&nbsp;px² and 12&nbsp;px extent), minus the hand-annotated label boxes.</p>
+        <p>Provisional terrain <code>T = cv2.inpaint(src, dilate(candidates, 5×5 ellipse) ∪ label ink, 4, INPAINT_TELEA)</code>. Per palette colour <code>C</code>, <code>a = clip((P − T)·(C − T)/|C − T|², 0, 1)</code>; each pixel takes the colour with the smallest residual <code>|P − (a·C + (1 − a)·T)|</code>, and <code>a</code> &lt; 0.12 is rejected. Black keeps only components of <code>a</code> &gt; 0.2 that contain <code>a</code> &gt; 0.85. The gondola core counts only within 7&nbsp;px of gondola edge ink. Masks are <code>a</code> &gt; 100/255.</p></details></dd>
+      <dt>1 · Pairs</dt><dd>Terminal markers: grey &lt; 70 and HSV value &lt; 90, label ink masked out (dilated 5 × 5), <code>cv2.morphologyEx</code> open with a 3 × 3 ellipse, components of 8–120&nbsp;px² with bbox ≤ 14&nbsp;px: 86 markers (fill fraction &gt; 0.68 = dot, else triangle). Each lift end is paired by hand with a marker (or a literal pixel) via the painted lift number; bottom = the end with the lower DEM height. Summits: painted ▲ ↔ OSM <code>natural=peak</code> by name. Result: 88 pairs <code>(X<sub>i</sub>, u<sub>i</sub>)</code>: 79 lift ends (69 from detected markers, 10 read off the image by hand; weight 1.0) and 9 peaks (weight 0.6).</dd>
+      <dt>2 · Camera</dt><dd>Parameters <code>p = (c<sub>x</sub>, c<sub>y</sub>, c<sub>z</sub>, yaw, pitch, roll, f, u<sub>0</sub>, v<sub>0</sub>, e)</code>; <code>c</code> is in exaggerated space and the principal point is free (it ends up off the image). <code>X' = (x, e·y, z)</code>, <code>d = R(X' − c) = (d<sub>r</sub>, d<sub>u</sub>, d<sub>fwd</sub>)</code>, <code>u = u<sub>0</sub> + f·d<sub>r</sub>/d<sub>fwd</sub></code>, <code>v = v<sub>0</sub> − f·d<sub>u</sub>/d<sub>fwd</sub></code>; depth is <code>d<sub>fwd</sub></code>. Minimise <code>Σ ρ(w<sub>i</sub>·(π(X<sub>i</sub>) − u<sub>i</sub>))</code> with <code>scipy.optimize.least_squares</code>, <code>loss="soft_l1"</code>, <code>f_scale=25</code>.</dd>
+      <dt>Rotation</dt><dd><code>fwd = (cos yaw·cos pitch, sin pitch, sin yaw·cos pitch)</code>, <code>right = (−sin yaw, 0, cos yaw)</code>, <code>up = right × fwd</code>. Roll: <code>r = right·cos roll + up·sin roll</code>, <code>u' = up·cos roll − right·sin roll</code>. R has rows <code>[r; u'; fwd]</code>. At yaw 0 forward is +x (east) and positive yaw turns south. Fitted <code>p = (−9738.8, 6458.1, 1666.2, −0.03228, −0.17748, −0.08043, 2169.1, 1686.5, −36.57, 2.5004)</code> (metres, radians, pixels).</dd>
+      <dt>Camera solve</dt><dd><details><summary>Bounds, scaling and the coarse fit that starts it</summary>
+        <p>Main fit bounds: <code>c<sub>x</sub></code> [−80, −3] km, <code>c<sub>y</sub></code> [0.5, 60] km, <code>c<sub>z</sub></code> ±20&nbsp;km, yaw ±1.2, pitch [−0.8, 0.3], roll ±0.3, <code>f</code> [300, 60,000], <code>u<sub>0</sub></code> [−2,000, 5,000], <code>v<sub>0</sub></code> [−4,000, 3,000], <code>e</code> [0.8, 4]. <code>x_scale = (1000, 500, 1000, .1, .1, .05, 500, 200, 200, .3)</code>, <code>max_nfev = 5000</code>. The start is the coarse fit with <code>e = 1.5</code>, clipped to the bounds.</p>
+        <p>Coarse fit (<code>fit0.py</code>, no <code>e</code>): summits (weight 1.0) plus painted lift-number labels taken as lift midpoints (weight 0.35), <code>soft_l1</code> with <code>f_scale = 20</code>, <code>max_nfev = 4000</code>, bounds <code>c<sub>x</sub></code> [−60, −3] km, <code>c<sub>y</sub></code> [0.5, 30] km, pitch [−0.8, 0.2], <code>f</code> [300, 20,000], <code>u<sub>0</sub></code> [500, 2,500], <code>v<sub>0</sub></code> ±3,000. Multi-start over <code>c<sub>x</sub></code> ∈ {−9, −14, −20} km × yaw ∈ {−0.3, 0, 0.3}, each from <code>(c<sub>x</sub>, 3500, 800, yaw, −0.15, 0, 2500, 1500, 300)</code>; keep the lowest cost.</p></details></dd>
+      <dt>3 · Spline</dt><dd>Residuals <code>r<sub>i</sub> = u<sub>i</sub> − π(X<sub>i</sub>)</code> fitted over ground position with <code>RBFInterpolator((x, z)/1000, r, kernel="thin_plate_spline", smoothing=0.03/(w<sub>i</sub>·mean(w)))</code>, positions in km. <code>M<sub>0</sub>(X) = π(X) + TPS(x, z)</code>.</dd>
+      <dt>4 · Chamfer</dt><dd>Distance fields <code>D<sub>k</sub> = cv2.distanceTransform(~mask<sub>k</sub>, DIST_L2, 5)</code> in source pixels for green, red and black runs and for cables (black ∪ gondola ∪ gondola core), sampled bilinearly and clamped at the border. Samples: OSM pistes (easy and novice → green, intermediate → red, the rest → black) and the 13 lifts that are not pinned (a lift is pinned when both its ends are control points: 39 of 52), densified to 12&nbsp;m horizontally; kept if <code>M<sub>0</sub></code> puts them inside the frame (5&nbsp;px margin) and <code>D</code> &lt; 40&nbsp;px: 7,161 run samples and 170 lift samples. Nodes: a 550&nbsp;m grid from min − 550 to max + 550 over the kept samples, kept if within 550&nbsp;m of every 7th sample: 114 nodes. Correction <code>δ(x, z) = Σ<sub>j</sub> exp(−|g − g<sub>j</sub>|² / 2σ²)·o<sub>j</sub></code>, σ = 500&nbsp;m, <code>o<sub>j</sub></code> in source pixels. Residual vector: <code>min(D<sub>k</sub>(M<sub>0</sub> + δ), 14)</code> (lift samples × 1.5), <code>1.2·δ(X<sub>i</sub>)</code> at the control points, <code>1.0·o</code>; the gradient is 0 where <code>D</code> ≥ 14. <code>least_squares(loss="soft_l1", f_scale=3, max_nfev=200)</code> with an analytic Jacobian from the distance-field gradients, run three times, each a warm restart from the last solution (no blur schedule). <code>M = M<sub>0</sub> + δ</code>.</dd>
+      <dt>Visibility</dt><dd>Project every DEM cell through the camera and keep the minimum depth per 4 × 4&nbsp;px bucket (source pixels, with a 200&nbsp;px margin). A point is visible if it is in front of the camera and its depth ≤ 1.015 × bucket + 60&nbsp;m. Used for the ski-area fills and the coverage maps, not for the lookup.</dd>
+      <dt>5 · Grid</dt><dd>A portable copy of <code>M</code>. Nodes every 40&nbsp;m (<code>dlat = 40/111320</code>, <code>dlon = dlat/cos φ</code>) over all runs and lifts in frame + 800&nbsp;m: 182 columns × 360 rows, latitudes descending. At each node, <code>X = (x, DEM(x, z), z)</code>, stored as <code>round(10·M(X))</code>, row-major from the north-west. JSON: <code>{grid: {west, north, dlon, dlat, nx, ny}, u: [...], v: [...]}</code>. Bilinear lookup against the full model: median 0.42&nbsp;px, 99th percentile 3.0&nbsp;px.</dd>
+      <dt>6 · Runtime</dt><dd>The browser only draws. Tracks are projected offline with the full model <code>M</code>: each fix becomes <code>X = (x, DEM(x, z), z)</code> and <code>uv = M(X)</code>, so GPS altitude is ignored. Tracks are labelled run / lift / stop, sampled every 5&nbsp;s (the first fix at or after each time) and packed. Tracks starting at or after 17:00 are dropped.</dd>
+      <dt>GPS labels</dt><dd><details><summary>Cleaning, smoothing, and the run / lift / stop rules</summary>
+        <p>1&nbsp;Hz fixes. Drop fixes that imply &gt; 35&nbsp;m/s from the last good one; split into segments at gaps &gt; 8&nbsp;s or &gt; 60&nbsp;m. Per segment a constant-velocity Kalman filter with an RTS smoother; heights are re-read from the DEM along the smoothed path. Speed is measured along the slope: <code>hypot(horizontal speed, vertical rate over ~5 s)</code>.</p>
+        <p>Run: speed &gt; 2.2&nbsp;m/s and vertical rate &lt; 0.4&nbsp;m/s (rests of up to 25 fixes and run blips of up to 8 fixes are absorbed into the surrounding state). Lift: per lift line, fixes within 35&nbsp;m of the line (plus half the cable gauge) form visits; a visit is a ride if it climbs at least <code>max(80 m, 35% of the line)</code> along the line at 0.25–1.3 × the line&rsquo;s speed, the ground under it rises at least 30% of the lift&rsquo;s own vertical over that stretch, and the fixes follow a monotone fit (median residual ≤ 12&nbsp;m). Everything else is stop.</p></details></dd>
+      <dt>Lift snap</dt><dd>A ride fix at ground position <code>P</code> on a lift with real ends <code>A</code> (bottom) and <code>B</code> (top): <code>f = clip((P − A)·(B − A)/|B − A|², 0, 1)</code>, <code>uv = a + f·(b − a)</code>, where <code>a</code> and <code>b</code> are the painted ends: the control-point pixels where the end is pinned, else the model projection.</dd>
+      <dt>Packing</dt><dd>Planar arrays <code>Int16 u</code>, <code>Int16 v</code> (6,000&nbsp;px space), <code>Uint8 state</code> (0 stop, 1 lift, 2 run) and <code>Uint8 km/h</code>, one entry per 5&nbsp;s step.</dd>
+    </dl>
+  </section>
+
+  <section class="part flat" aria-label="What the painting covers and how much it distorts">
+    <h2>What the painting covers and how much it distorts</h2>
+    <p>The lookup gives, for every ground point, where it lands in the painting. That shows which terrain the painting covers at all and how much of it is stretched or squeezed. Fig.&nbsp;M6 draws this on a map with north to the left, as in Fig.&nbsp;2 on the <a href="index.html">overview page</a>, so east is up and the painter looks toward the top. It covers 98&nbsp;km² of terrain; thin grey lines are OpenStreetMap runs and black lines are lifts.</p>
+    <figure class="flatfig" id="flat">
+      <div class="bar flat-bar"><span>Show</span>
+        <div class="seg" id="flat-modes" role="group" aria-label="Flat-map view">
+          <button type="button" data-m="coverage" class="on" aria-pressed="true">Coverage</button>
+          <button type="button" data-m="scale" aria-pressed="false">Scale</button>
+          <button type="button" data-m="stretch" aria-pressed="false">Stretch</button>
+        </div>
+      </div>
+      <div class="frame zf flat-frame" id="flat-frame" style="aspect-ratio: 2400 / 1139">
+        <div class="flat-legend" id="flat-legend"></div>
+        <div class="zoom">
+          <button data-z="in" aria-label="Zoom in"><svg viewBox="0 0 14 14"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6"/></svg></button>
+          <button data-z="out" aria-label="Zoom out"><svg viewBox="0 0 14 14"><path d="M2 7h10" stroke="currentColor" stroke-width="1.6"/></svg></button>
+          <button data-z="home" aria-label="Show whole map"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 5V1.5H5M9 1.5h3.5V5M12.5 9v3.5H9M5 12.5H1.5V9"/></svg></button>
+        </div>
+      </div>
+      <div class="aerial-legend flat-note">
+        <span class="aerial-north" title="North is to the left"><svg viewBox="0 0 28 12" width="28" height="12" aria-hidden="true"><path d="M27 6H2M6.5 1.5L2 6l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>N</span>
+        <span class="aerial-scale"><i></i><em></em></span>
+      </div>
+      <figcaption><b>Fig.&nbsp;M6</b> The painting on the ground, north to the left. <b>Coverage</b>: what the painting shows, hides behind a ridge, or leaves out. <b>Scale</b>: ground metres per painted pixel (3,000&nbsp;px source), painted ground only. <b>Stretch</b>: the ground footprint of a fixed circle in the painting, one per 400&nbsp;m. Drag to pan; click the map, then scroll or pinch to zoom.</figcaption>
+      <img id="flat-src-coverage" src="img/flat-coverage.jpg" alt="" hidden>
+      <img id="flat-src-scale" src="img/flat-scale.jpg" alt="" hidden>
+      <img id="flat-src-stretch" src="img/flat-tissot.jpg" alt="" hidden>
+    </figure>
+    <p><b>Coverage.</b> About 52% of the terrain is painted, 30% is hidden behind ridges from the painter&rsquo;s viewpoint and 18% lies outside the frame. The runs fare better than the terrain as a whole: 71% of the sampled run length is painted, 21% is hidden and 8% is outside; for lifts the figures are 71%, 27% and 2%. Hidden ground is what the artist had to leave out or draw on the ridge line, so tracks there cannot be placed accurately.</p>
+    <p><b>Scale.</b> One painted pixel covers a median 5.7&nbsp;m of ground (linear, geometric mean of the two directions); 83% of painted ground is under 10&nbsp;m per pixel and the 95th percentile is 18&nbsp;m. The coarse areas (dark, 40&nbsp;m per pixel and more, under 1% of painted ground) are slopes turned away from the viewer and isolated summits seen edge-on.</p>
+    <p><b>Stretch.</b> Each ellipse is the ground area covered by a circle of 9 painted pixels; a circle would mean no distortion. The median ellipse is 2.5 times longer than wide, 41% are more than 3 times, and 9% more than 10 times. Where they point along a ridge, the painting squeezes that ridge into a few pixels, and a GPS track there moves fast across the painting for a small ground distance.</p>
+  </section>
+
+  <section class="part" aria-label="Known issues">
+    <h2>Known issues</h2>
+    <ul class="plain">
+      <li>Okushiga and Yakebitai, at the west end of the painting, are the weakest area: the artist distorted them most and there are few markers there. Leave-one-out error for control points in the west is about 50&nbsp;px (median), against 25&nbsp;px overall.</li>
+      <li>Terrain hidden behind a ridge can&rsquo;t be placed reliably, and tracks there bunch together.</li>
+      <li>Runs that exist in OSM but not in the painting, or the other way round, are left out of the refinement.</li>
+      <li>Lift rides are drawn as straight lines along the painted lift, not along the GPS path.</li>
+    </ul>
+  </section>
+
+  <footer><p>Panorama © Shiga Kogen Lift Association, from its public panorama map. Aerial photograph: 国土地理院 (GSI Japan) seamless orthophoto, 2022 survey with some patches from other years. Winter satellite image: contains modified Copernicus Sentinel data 2024 (scene S2A_54STF_20240315, via Element&nbsp;84 Earth Search). Terrain: GSI DEM. Lifts, runs and ski-area outlines: © OpenStreetMap contributors.</p><p>Painting and panorama history: <a href="https://en.wikipedia.org/wiki/Heinrich_C._Berann">Heinrich C. Berann</a>, <a href="https://en.wikipedia.org/wiki/James_Niehues">James Niehues</a>. Resort figures: <a href="https://shigakogen-ski.or.jp/english/ticket/">Shiga Kogen ski pass page</a> (18 areas, 45 lifts), Shiga Kogen Lift Association area map (Dec 2024; 400&nbsp;ha, 79,975&nbsp;m of courses, 1,325–2,307&nbsp;m). Olympics: <a href="https://en.wikipedia.org/wiki/Kanbayashi_Snowboard_Park">Kanbayashi Snowboard Park</a>, <a href="https://en.wikipedia.org/wiki/Alpine_skiing_at_the_1998_Winter_Olympics">alpine skiing at the 1998 Winter Olympics</a>, <a href="https://www.japan-guide.com/e/e6026.html">japan-guide.com</a>.</p></footer>
+</main>
+
+<script>
+/* ZoomFig(frameEl, src, {w, h, maxZoom, alt}) -> {zoomBy(f), home(), setSrc(src), img, addImage(src, alt), show(i)}
+   addImage stacks another same-size image under the same camera (decoded straight away, hidden); show(i) swaps instantly.
+   Pan by dragging, wheel zoom only after the frame was clicked (page scroll is not hijacked; ctrl+wheel/pinch always zooms),
+   pinch on touch, double-click zoom, animated button zoom. Buttons: any [data-z="in|out|home"] inside frameEl.
+   w,h = intrinsic pixel size of the image (used for layout); maxZoom = multiple of the fit-to-frame scale (default 6);
+   onDraw(cam, w, h) = called after every camera change (e.g. to repaint a vector overlay canvas). */
+function ZoomFig(frame, src, o = {}) {
+  const IW = o.w, IH = o.h, MAXZ = o.maxZoom || 6;
+  const img = new Image(); img.className = 'zfimg'; img.alt = o.alt || ''; img.draggable = false; img.decoding = 'async';
+  img.style.width = IW + 'px'; img.style.height = IH + 'px'; img.src = src; frame.prepend(img);
+  let w = 0, h = 0, cam = { s: 1, tx: 0, ty: 0 }, tween = null;
+  const minS = () => Math.max(w / IW, h / IH);
+  const clampC = c => { const m = minS(); c.s = Math.max(m, Math.min(m * MAXZ, c.s)); c.tx = Math.min(0, Math.max(w - IW * c.s, c.tx)); c.ty = Math.min(0, Math.max(h - IH * c.s, c.ty)); return c; };
+  const imgs = [img];
+  const draw = () => { const t = `translate(${cam.tx}px,${cam.ty}px) scale(${cam.s})`; for (const im of imgs) im.style.transform = t; if (o.onDraw) o.onDraw(cam, w, h); };
+  const addImage = (src2, alt2 = '') => {
+    const im = new Image(); im.className = 'zfimg'; im.alt = alt2; im.draggable = false; im.decoding = 'async';
+    im.style.width = IW + 'px'; im.style.height = IH + 'px'; im.style.opacity = '0'; im.src = src2;
+    imgs[imgs.length - 1].after(im); imgs.push(im); if (im.decode) im.decode().catch(() => {});
+    im.style.transform = img.style.transform; return imgs.length - 1;
+  };
+  const show = i => imgs.forEach((im, k) => { im.style.opacity = k === i ? '1' : '0'; im.setAttribute('aria-hidden', String(k !== i)); });
+  const about = (f, x, y, c = cam) => { const s2 = c.s * f; c.tx = x - (x - c.tx) * s2 / c.s; c.ty = y - (y - c.ty) * s2 / c.s; c.s = s2; return clampC(c); };
+  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fly = (to, ms = 300) => { if (RM) ms = 1; tween = { a: { ...cam }, b: clampC(to), t0: performance.now(), ms }; requestAnimationFrame(step); };
+  function step(now) {
+    if (!tween) return;
+    const k = Math.min(1, (now - tween.t0) / tween.ms), e = 1 - (1 - k) ** 3, a = tween.a, b = tween.b;
+    const s = Math.exp(Math.log(a.s) + (Math.log(b.s) - Math.log(a.s)) * e);
+    const ca = [(w / 2 - a.tx) / a.s, (h / 2 - a.ty) / a.s], cb = [(w / 2 - b.tx) / b.s, (h / 2 - b.ty) / b.s];
+    const cx = ca[0] + (cb[0] - ca[0]) * e, cy = ca[1] + (cb[1] - ca[1]) * e;
+    cam = clampC({ s, tx: w / 2 - cx * s, ty: h / 2 - cy * s }); draw();
+    if (k < 1) requestAnimationFrame(step); else tween = null;
+  }
+  const zoomBy = f => fly(about(f, w / 2, h / 2, { ...cam }));
+  const fit = () => { const s = minS(); return { s, tx: (w - IW * s) / 2, ty: (h - IH * s) / 2 }; };   // centred when the frame crops (phones)
+  const home = () => fly(fit());
+  function resize() {
+    const r = frame.getBoundingClientRect(), iw = frame.clientWidth, ih = frame.clientHeight; if (!iw) return;
+    const f = w ? iw / w : 0; w = iw; h = ih;
+    if (f) { cam.s *= f; cam.tx *= f; cam.ty *= f; clampC(cam); } else cam = clampC(fit());
+    draw();
+  }
+  new ResizeObserver(resize).observe(frame); resize();
+  const ptrs = new Map(); let pinch = null;
+  frame.addEventListener('pointerdown', e => {
+    if (e.target.closest('button,a,.zoom')) return;
+    tween = null; frame.dataset.live = 1; frame.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = Math.hypot(a[0] - b[0], a[1] - b[1]); }
+    frame.classList.add('grabbing');
+  });
+  frame.addEventListener('pointermove', e => {
+    if (!ptrs.has(e.pointerId)) return; const [ox, oy] = ptrs.get(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    if (ptrs.size === 2 && pinch) { const [a, b] = [...ptrs.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]), r = frame.getBoundingClientRect(); about(d / pinch, (a[0] + b[0]) / 2 - r.left, (a[1] + b[1]) / 2 - r.top); pinch = d; }
+    else { cam.tx += e.clientX - ox; cam.ty += e.clientY - oy; clampC(cam); }
+    draw();
+  });
+  const up = e => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; if (!ptrs.size) frame.classList.remove('grabbing'); };
+  frame.addEventListener('pointerup', up); frame.addEventListener('pointercancel', up);
+  frame.addEventListener('pointerleave', () => delete frame.dataset.live);
+  frame.addEventListener('wheel', e => {
+    if (!e.ctrlKey && !frame.dataset.live) return;
+    e.preventDefault(); tween = null; const r = frame.getBoundingClientRect(); about(Math.exp(-e.deltaY * (e.ctrlKey ? .01 : .002)), e.clientX - r.left, e.clientY - r.top); draw();
+  }, { passive: false });
+  frame.addEventListener('dblclick', e => { if (e.target.closest('.zoom')) return; const r = frame.getBoundingClientRect(); fly(about(2, e.clientX - r.left, e.clientY - r.top, { ...cam }), 250); });
+  frame.querySelectorAll('[data-z]').forEach(b => b.addEventListener('click', () => { const z = b.dataset.z; z === 'in' ? zoomBy(1.8) : z === 'out' ? zoomBy(1 / 1.8) : home(); }));
+  return { zoomBy, home, img, draw, addImage, show, setSrc: s => { img.src = s; } };
+}
+/* Fig. M6: flat-map figure. Three pre-baked north-left images of the same size (fig/flat-*.jpg), swapped in one ZoomFig; legend chip per mode;
+   scale bar from the current zoom. Runs after zoomfig.js. Markup: flat.html. */
+(function () {
+  'use strict';
+  const root = document.getElementById('flat'); if (!root || typeof ZoomFig === 'undefined') return;
+  const frame = document.getElementById('flat-frame'), legend = document.getElementById('flat-legend');
+  const IW = 2400, IH = 1139, MPP = 6.0;            // image size and ground metres per image pixel (bake_flat.py: out_m_per_px)
+  const src = { coverage: document.getElementById('flat-src-coverage').src, scale: document.getElementById('flat-src-scale').src, stretch: document.getElementById('flat-src-stretch').src };
+  const sw = (c, t) => `<span><i style="--c:${c}"></i>${t}</span>`;
+  const ring = '<svg width="34" height="16" viewBox="0 0 34 16" aria-hidden="true"><circle cx="8" cy="8" r="4.5" fill="none" stroke="#3c3c3c" stroke-width="1.5"/><ellipse cx="24" cy="8" rx="8" ry="3" fill="none" stroke="#3c3c3c" stroke-width="1.5"/></svg>';
+  const MODES = {
+    coverage: { label: 'North-left map of the resort coloured by whether the painting shows each ground point: painted, hidden behind a ridge, or outside the frame',
+      html: '<b>Ground point is</b>' + sw('#9cbea8', 'painted') + sw('#d9a878', 'hidden behind a ridge') + sw('#e4e9ec', 'outside the frame') },
+    scale: { label: 'North-left map of ground metres per painted pixel, darker where the painting is more compressed',
+      html: '<b>Ground metres per painted pixel</b>' + sw('#f7f3e8', '&lt;&nbsp;5&nbsp;m') + sw('#eedebe', '5–10&nbsp;m') + sw('#debe8c', '10–20&nbsp;m') + sw('#be9258', '20–40&nbsp;m') + sw('#8c602d', '40–80&nbsp;m') + sw('#543418', '&gt;&nbsp;80&nbsp;m') + sw('#e2e2e2', 'not painted') },
+    stretch: { label: 'North-left map with ellipses showing the ground footprint of a small circle in the painting',
+      html: '<b>Stretch</b><span class="wrap">' + ring + '&nbsp;ellipse = ground footprint of a 9&nbsp;px circle in the painting; a circle means no stretch</span>' }
+  };
+  const bar = root.querySelector('.aerial-scale i'), lab = root.querySelector('.aerial-scale em');
+  function onDraw(cam) {                              // nice round length near 130 css px at the current zoom
+    const target = 130 * MPP / cam.s, e = Math.pow(10, Math.floor(Math.log10(target))), f = target / e;
+    const m = (f >= 5 ? 5 : f >= 2 ? 2 : 1) * e;
+    bar.style.width = (m / MPP * cam.s).toFixed(1) + 'px'; lab.textContent = m >= 1000 ? (m / 1000) + '\u00a0km' : m + '\u00a0m';
+  }
+  const zf = ZoomFig(frame, src.coverage, { w: IW, h: IH, maxZoom: 8, alt: MODES.coverage.label, onDraw });
+  const IDX = { coverage: 0 }; for (const m of Object.keys(MODES)) if (m !== 'coverage') IDX[m] = zf.addImage(src[m], MODES[m].label);   // all three stacked + decoded at load: instant switch
+  let mode = 'coverage';
+  function show(m) {
+    if (m === mode || !MODES[m]) return; mode = m;
+    root.querySelectorAll('#flat-modes button').forEach(b => { const on = b.dataset.m === m; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+    legend.innerHTML = MODES[m].html; frame.setAttribute('aria-label', MODES[m].label);
+    zf.show(IDX[m]);
+  }
+  legend.innerHTML = MODES.coverage.html;
+  root.querySelectorAll('#flat-modes button').forEach(b => b.addEventListener('click', () => show(b.dataset.m)));
+})();
+/* In-page text editing for people who can write this artifact.
+   Edits live in a sibling file, {key: innerHTML}, key = tag + hash of the element's ORIGINAL markup, so an
+   edit follows its element and is dropped once the source text itself changes. Each page has its own file, named by
+   <main data-edits="...">: index.html -> edits.json, methodology.html -> edits-methodology.json (default edits.json).
+   The page itself never changes; Save publishes only that one file (artifact files form) with a per-file ifMatch, so it never conflicts with a republish of
+   the page itself, only with another save of the same edits file. Unsaved edits are kept as a draft in sessionStorage on every
+   keystroke and restored after any reload (a conflict reloads the view). Outside the claude.ai viewer saved edits still
+   apply, but there is no editing UI. */
+(() => {
+  const SEL = 'main h1, main .dek, main h2, main h3, main p, main li, main figcaption, main .srclabel';
+  const SKIP = 'button, .bar, .seg, .zoom, svg, pre, dd, details, .legend, .aerial-legend, .time';
+  const els = [...document.querySelectorAll(SEL)].filter(e => !e.closest(SKIP) && e.textContent.trim());
+  const hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return (h >>> 0).toString(36); };
+  const orig = new Map(), keys = new Map(), seen = {};
+  for (const e of els) {
+    const html = e.innerHTML.trim(); let k = e.tagName.toLowerCase() + '-' + hash(html.replace(/\s+/g, ' '));
+    seen[k] = (seen[k] || 0) + 1; if (seen[k] > 1) k += '-' + seen[k];
+    orig.set(e, html); keys.set(e, k);
+  }
+  /* keep inline formatting only: b/strong/i/em/code/sub/sup/br/a[href]; drop everything else to its text */
+  const OK = new Set(['B', 'STRONG', 'I', 'EM', 'CODE', 'SUB', 'SUP', 'BR', 'A']);
+  function clean(html) {
+    const t = document.createElement('template'); t.innerHTML = html;
+    (function walk(n) {
+      for (const c of [...n.childNodes]) {
+        if (c.nodeType !== 1) continue;
+        if (!OK.has(c.tagName)) { if (/^(SCRIPT|STYLE|IFRAME|OBJECT)$/.test(c.tagName)) c.remove(); else { walk(c); c.replaceWith(...c.childNodes); } continue; }
+        for (const a of [...c.attributes]) if (!(c.tagName === 'A' && a.name === 'href' && /^https?:/i.test(a.value))) c.removeAttribute(a.name);
+        walk(c);
+      }
+    })(t.content);
+    return t.innerHTML.trim();
+  }
+  const EDITS = (document.querySelector('main[data-edits]') || { dataset: {} }).dataset.edits || 'edits.json';
+  let edits = {};
+  const apply = () => { for (const [e, k] of keys) if (edits[k] != null) e.innerHTML = clean(edits[k]); };
+
+  const sha256 = async txt => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt)))].map(b => b.toString(16).padStart(2, '0')).join('');
+  let fileSha = null;   // sha256 of the edits.json this view loaded (null: none published yet) -> ifMatch on save
+  const loaded = (location.protocol === 'file:' || !(window.claude && window.claude.use)) ? Promise.resolve() : fetch(EDITS, { cache: 'no-store' })   // edits only exist on the claude.ai artifact
+    .then(async r => { if (!r.ok) return; const txt = await r.text(); const j = JSON.parse(txt); if (j && typeof j === 'object') { edits = j; fileSha = await sha256(txt); apply(); } })
+    .catch(() => {});
+  if (!window.claude || !window.claude.use) return;   // outside the claude.ai viewer: saved edits show, but no editing UI
+  const DRAFT = 'tm-edit-draft:' + location.pathname;
+  const readDraft = () => { try { return JSON.parse(sessionStorage.getItem(DRAFT) || 'null'); } catch (e) { return null; } };
+  const writeDraft = d => { try { d ? sessionStorage.setItem(DRAFT, JSON.stringify(d)) : sessionStorage.removeItem(DRAFT); } catch (e) {} };
+
+  (async () => {
+    const art = await window.claude.use('artifact'); if (!art) return;
+    const user = await window.claude.use('user');
+    if (user && !(await user.canEdit())) return;
+    const bar = document.createElement('div'); bar.className = 'editbar';
+    bar.innerHTML = '<button type="button" data-a="edit">Edit text</button><button type="button" data-a="save" hidden>Save</button><button type="button" data-a="cancel" hidden>Cancel</button><span class="editmsg" role="status"></span>';
+    document.body.append(bar);
+    const btn = a => bar.querySelector(`[data-a="${a}"]`), msg = bar.querySelector('.editmsg');
+    let before = null;
+    const editing = () => document.documentElement.classList.contains('editing');
+    const mode = on => {
+      document.documentElement.classList.toggle('editing', on);
+      for (const e of keys.keys()) { if (on) e.setAttribute('contenteditable', 'true'); else e.removeAttribute('contenteditable'); }
+      btn('edit').hidden = on; btn('save').hidden = btn('cancel').hidden = !on;
+    };
+    const current = () => { const d = {}; for (const [e, k] of keys) { const h = clean(e.innerHTML); if (h !== clean(edits[k] ?? orig.get(e))) d[k] = h; } return d; };
+    let t = 0;
+    document.addEventListener('input', e => { if (!editing() || !e.target.closest('[contenteditable]')) return; clearTimeout(t); t = setTimeout(() => writeDraft(current()), 300); });
+    btn('edit').onclick = () => { before = new Map([...keys.keys()].map(e => [e, e.innerHTML])); msg.textContent = 'Click any text to edit it.'; mode(true); };
+    btn('cancel').onclick = () => { if (before) for (const [e, h] of before) e.innerHTML = h; writeDraft(null); mode(false); msg.textContent = ''; };
+    document.addEventListener('paste', e => {
+      if (!editing() || !e.target.closest('[contenteditable]')) return;
+      e.preventDefault(); document.execCommand('insertText', false, e.clipboardData.getData('text/plain'));
+    });
+    btn('save').onclick = async () => {
+      clearTimeout(t); writeDraft(current());   // survives the reload a conflict triggers
+      const next = { ...edits };
+      for (const [e, k] of keys) { const h = clean(e.innerHTML); if (h === clean(orig.get(e))) delete next[k]; else next[k] = h; }
+      const body = JSON.stringify(next, null, 1);
+      btn('save').disabled = true; msg.textContent = 'Saving…';
+      try {
+        const res = await art.publish({ [EDITS]: { content: body, contentType: 'application/json', ifMatch: fileSha } });
+        fileSha = (res && res.shas && res.shas[EDITS]) || await sha256(body);
+        edits = next; writeDraft(null); apply(); mode(false); msg.textContent = 'Saved.';
+      } catch (err) {
+        const c = err && err.code;
+        msg.textContent = c === 'conflict' ? 'The page changed while you were editing. Reloading; your edits will come back, then Save again.'
+          : c === 'not_writer' || c === 'not_granted' || c === 'capability_disabled' ? 'This view is read-only.'
+          : c === 'rate_limited' ? 'Saving too often. Try again in a moment.' : 'Couldn’t save (' + (c || 'error') + '). Your edits are still on the page.';
+        if (c === 'not_writer' || c === 'not_granted') { mode(false); bar.hidden = true; }
+      } finally { btn('save').disabled = false; }
+    };
+    /* restore a draft left by a reload (conflict, someone else's save, or a page update) */
+    await loaded;
+    const d = readDraft();
+    if (d && Object.keys(d).length) {
+      before = new Map([...keys.keys()].map(e => [e, e.innerHTML]));
+      let n = 0; for (const [e, k] of keys) if (d[k] != null) { e.innerHTML = clean(d[k]); n++; }
+      if (n) { mode(true); msg.textContent = `Restored ${n} unsaved edit${n > 1 ? 's' : ''}. Click Save to keep ${n > 1 ? 'them' : 'it'}.`; }
+      else writeDraft(null);
+    }
+  })();
+})();
+</script>
+</body></html>
